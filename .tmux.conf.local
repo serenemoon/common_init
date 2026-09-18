@@ -427,8 +427,15 @@ set -gu prefix2
 # if you don't want Oh my tmux! to alter a binding or a setting, use #!important
 # bind c new-window -c '#{pane_current_path}' #!important
 
+# source ~/.bashrc in new windows (run as interactive non-login shell)
+set -g default-command "${SHELL}"
+
 # move status line to top
 #set -g status-position top
+
+# split panes: | vertical (side by side), - horizontal (top/bottom)
+bind | split-window -h -c '#{pane_current_path}'
+bind - split-window -v -c '#{pane_current_path}'
 
 # switch windows with Alt+1..9 without prefix
 bind -n M-1 select-window -t 1

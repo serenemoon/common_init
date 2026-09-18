@@ -1,4 +1,6 @@
 external/*
+bin/*
 
 # codegraph index cache
 .codegraph/
+.cac/
