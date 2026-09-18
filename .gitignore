@@ -1,0 +1,4 @@
+external/*
+
+# codegraph index cache
+.codegraph/

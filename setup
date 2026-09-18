@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+SETUP_GIT_DIR=`dirname $(readlink -f $0)`
+SETUP_EXT_DIR=`dirname $(readlink -f $0)`/external
+FORCE_SETUP=0
+
+echo "SETUP_GIT_DIR: $SETUP_GIT_DIR"
+
+mkdir -p ~/toolwares/
+
+source $SETUP_GIT_DIR/scripts/setup_git
+
+setup_for_tmux() {
+  TMUX_DIR="$SETUP_EXT_DIR/tmux"
+  [[ ! -d $TMUX_DIR ]] && git clone --single-branch https://github.com/gpakosz/.tmux.git $TMUX_DIR
+  mkdir -p ~/.config/tmux
+  ln -s -f $TMUX_DIR/.tmux.conf ~/.config/tmux/tmux.conf
+  cp $SETUP_GIT_DIR/.tmux.conf.local ~/.config/tmux/tmux.conf.local
+}
+
+setup_for_git() {
+  git config --global http.sslverify false                
+  git config --global https.sslverify false               
+  git config --global alias.st status                     
+  git config --global alias.co checkout                   
+  git config --global alias.cp cherry-pick                
+  git config --global alias.cm commit                     
+  git config --global alias.cme "commit --amend --no-edit"
+  git config --global alias.cma "commit --amend"          
+  git config --global alias.rsh "reset --hard HEAD"       
+  git config --global alias.dfh "diff HEAD"               
+  git config --global alias.dfhs "diff HEAD --stat"       
+  git config --global alias.df  "diff HEAD~1"             
+  git config --global alias.dfs  "diff HEAD~1 --stat"     
+  git config --global alias.logs  "log --stat"            
+  git config --global alias.logf  "log --format=fuller"   
+  git config --global alias.rl  "reflog"                  
+  git config --global alias.rlf  "reflog --pretty=fuller" 
+  git config --global alias.br  "branch"                  
+  git config --global alias.cl  "clean -f -d"             
+  git config --global alias.rsh  "reset --hard HEAD"      
+  git config --global alias.rsh1  "reset --hard HEAD~"    
+  git config --global core.excludesfile "~/.gitignore"    
+  git config --global --add oh-my-zsh.hide-status 1       
+  git config --global --add oh-my-zsh.hide-dirty 1
+}
+
+setup_for_tmux
+setup_for_git
