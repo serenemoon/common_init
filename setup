@@ -8,6 +8,7 @@ FORCE_SETUP=0
 echo "SETUP_GIT_DIR: $SETUP_GIT_DIR"
 
 mkdir -p ~/toolwares/
+mkdir -p ~/.config/
 
 is_zsh() {                                                                    
     [[ "$SHELL" =~ zsh ]] && return 0 || return 1                             
@@ -70,6 +71,16 @@ setup_for_fzf() {
   _addlinetorc 'eval "$(fzf --bash)"'
 }
 
+setup_for_nvim() {
+  NVIMDIR="~/nvimrc"
+
+  [[ ! -d $NVIMDIR ]] && git clone https://github.com/serenemoon/nvimrc.git $NVIMDIR
+  NVIMLINK=~/.config/nvim
+  [[ -L $NVIMLINK ]] && rm $NVIMLINK 
+  [[ -d $NVIMLINK && ! -L $NVIMLINK ]] && mv $NVIMLINK ~/.config/nvim.bak.$$
+  ln -f -s $NVIMDIR $NVIMLINK && echo ~/.config/nvim linked to $DIRN
+}
+
 setup_for_git() {
   git config --global http.sslverify false                
   git config --global https.sslverify false               
@@ -97,9 +108,68 @@ setup_for_git() {
   git config --global --add oh-my-zsh.hide-dirty 1
 }
 
-setup_for_tmux_conf
-setup_for_tmux_bin
-setup_for_git
-setup_for_fzf
+# -- CLI flags: each setup_for_xxx has a default, override via args -------------
+#   ./setup                  -> run all enabled-by-default steps
+#   ./setup --no-tmux-conf   -> skip tmux conf
+#   ./setup --tmux-bin       -> force enable tmux bin (disabled by default)
+#   ./setup --list           -> show step status and exit
+ENABLE_TMUX_CONF=1
+ENABLE_TMUX_BIN=0
+ENABLE_FZF=0
+ENABLE_GIT=1
+ENABLE_NVIM=0
 
+usage() {
+  cat <<EOF
+Usage: $0 [options]
+  --tmux-conf          enable  setup_for_tmux_conf
+  --no-tmux-conf       disable setup_for_tmux_conf
+  --tmux-bin           enable  setup_for_tmux_bin
+  --no-tmux-bin        disable setup_for_tmux_bin
+  --fzf                enable  setup_for_fzf
+  --no-fzf             disable setup_for_fzf
+  --git                enable  setup_for_git
+  --no-git             disable setup_for_git
+  --nvim               enable  setup_for_nvim
+  --no-nvim            disable setup_for_nvim
+  --all                enable all steps
+  --list               show step status and exit
+  -h, --help           show this help
+EOF
+}
 
+LIST_ONLY=0
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --tmux-conf)    ENABLE_TMUX_CONF=1 ;;
+    --no-tmux-conf) ENABLE_TMUX_CONF=0 ;;
+    --tmux-bin)     ENABLE_TMUX_BIN=1 ;;
+    --no-tmux-bin)  ENABLE_TMUX_BIN=0 ;;
+    --fzf)          ENABLE_FZF=1 ;;
+    --no-fzf)       ENABLE_FZF=0 ;;
+    --git)          ENABLE_GIT=1 ;;
+    --no-git)       ENABLE_GIT=0 ;;
+    --nvim)         ENABLE_NVIM=1 ;;
+    --no-nvim)      ENABLE_NVIM=0 ;;
+    --all)          ENABLE_TMUX_CONF=1; ENABLE_TMUX_BIN=1; ENABLE_FZF=1; ENABLE_GIT=1; ENABLE_NVIM=1 ;;
+    --list)         LIST_ONLY=1 ;;
+    -h|--help)      usage; exit 0 ;;
+    *) echo "unknown option: $1"; usage; exit 1 ;;
+  esac
+  shift
+done
+
+echo "step status:"
+echo "  tmux_conf : $ENABLE_TMUX_CONF"
+echo "  tmux_bin  : $ENABLE_TMUX_BIN"
+echo "  fzf       : $ENABLE_FZF"
+echo "  git       : $ENABLE_GIT"
+echo "  nvim      : $ENABLE_NVIM"
+
+if [[ $LIST_ONLY -eq 1 ]]; then exit 0; fi
+
+[[ $ENABLE_TMUX_CONF -eq 1 ]] && setup_for_tmux_conf
+[[ $ENABLE_TMUX_BIN  -eq 1 ]] && setup_for_tmux_bin
+[[ $ENABLE_FZF       -eq 1 ]] && setup_for_fzf
+[[ $ENABLE_GIT       -eq 1 ]] && setup_for_git
+[[ $ENABLE_NVIM      -eq 1 ]] && setup_for_nvim
