@@ -417,6 +417,13 @@ tmux_conf_urlscan_options="--compact --dedupe"
 # set -g prefix C-a
 # bind C-a send-prefix
 
+# use Alt+` as the prefix
+unbind C-b
+unbind C-a
+set -g prefix M-`
+bind M-` send-prefix
+set -gu prefix2
+
 # if you don't want Oh my tmux! to alter a binding or a setting, use #!important
 # bind c new-window -c '#{pane_current_path}' #!important
 
