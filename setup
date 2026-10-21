@@ -84,28 +84,11 @@ setup_for_nvim() {
 setup_for_git() {
   git config --global http.sslverify false                
   git config --global https.sslverify false               
-  git config --global alias.st status                     
-  git config --global alias.co checkout                   
-  git config --global alias.cp cherry-pick                
-  git config --global alias.cm commit                     
-  git config --global alias.cme "commit --amend --no-edit"
-  git config --global alias.cma "commit --amend"          
-  git config --global alias.rsh "reset --hard HEAD"       
-  git config --global alias.dfh "diff HEAD"               
-  git config --global alias.dfhs "diff HEAD --stat"       
-  git config --global alias.df  "diff HEAD~1"             
-  git config --global alias.dfs  "diff HEAD~1 --stat"     
-  git config --global alias.logs  "log --stat"            
-  git config --global alias.logf  "log --format=fuller"   
-  git config --global alias.rl  "reflog"                  
-  git config --global alias.rlf  "reflog --pretty=fuller" 
-  git config --global alias.br  "branch"                  
-  git config --global alias.cl  "clean -f -d"             
-  git config --global alias.rsh  "reset --hard HEAD"      
-  git config --global alias.rsh1  "reset --hard HEAD~"    
   git config --global core.excludesfile "~/.gitignore"    
   git config --global --add oh-my-zsh.hide-status 1       
   git config --global --add oh-my-zsh.hide-dirty 1
+  # alias 统一由 Makefile 的 git-aliases 管理，这里不再写
+  echo "git aliases: run 'make git-aliases'"
 }
 
 # -- CLI flags: each setup_for_xxx has a default, override via args -------------

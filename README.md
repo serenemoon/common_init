@@ -2,11 +2,56 @@
 
 一些常用的初始化动作
 
+## 通用命令（Makefile）
+
+和平台无关的小命令放在仓库根的 `Makefile` 里，按「分组-动作」命名：
+
+```bash
+make                # 等同 make help，按分组列出所有命令
+make git-aliases    # 配置下面的 git alias
+```
+
+`make git-aliases` 目前配置这些：
+
+| alias | 实际命令 |
+| ----- | -------- |
+| `st` | `status` |
+| `co` | `checkout` |
+| `br` | `branch` |
+| `cb` | `checkout -b` |
+| `cm` | `commit` |
+| `cma` | `commit --amend` |
+| `cme` | `commit --amend --no-edit` |
+| `aa` | `add --all` |
+| `cp` | `cherry-pick` |
+| `cl` | `clean -f -d` |
+| `rsh` | `reset --hard HEAD` |
+| `rsh1` | `reset --hard HEAD~` |
+| `dfh` | `diff HEAD` |
+| `dfhs` | `diff HEAD --stat` |
+| `df` | `diff HEAD~1` |
+| `dfs` | `diff HEAD~1 --stat` |
+| `lg` | `log --oneline --graph --decorate --all` |
+| `ll` | `log --oneline -20` |
+| `logs` | `log --stat` |
+| `logf` | `log --format=fuller` |
+| `rl` | `reflog` |
+| `rlf` | `reflog --pretty=fuller` |
+
+新增命令：在对应分组下加目标（命名 `分组-动作`），在 `help` 的对应分组里加一行说明，
+再把目标加进 `.PHONY`。命令要幂等，重复执行结果一致。
+
+输出文案用英文——`make` 是原生程序，在 Windows 控制台按 ANSI 代码页输出，中文会乱码；
+注释和文档仍然是中文。`make git-aliases` 只改 git 的 `--global` alias，不碰其他配置。
+
 ## Linux / macOS
 
 ```bash
 ./setup
 ```
+
+每个功能一个 `setup_for_xxx` 函数，用 `--xxx` / `--no-xxx` 控制是否执行，`--list` 只看状态，
+`--all` 全开。**git alias 不在这里设置**，统一由 `make git-aliases` 管理（见上面的「通用命令」）。
 
 ## Windows
 

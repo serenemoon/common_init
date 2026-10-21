@@ -10,6 +10,7 @@
 
 | 平台 | 入口 | 做的事 |
 | --- | --- | --- |
+| 通用 | `Makefile` | 跟平台无关的小命令（目前是 git alias），按分组命名 |
 | Linux / macOS | `./setup`（bash） | tmux 配置与源码编译、fzf、git alias、nvim 配置 |
 | Windows | `.\setup.ps1`（PowerShell 5.1+） | choco、应用安装、命令行键位、fzf 快捷键 |
 
@@ -19,6 +20,8 @@
 参数形如 `--tmux-conf` / `--no-tmux-conf`，另有 `--all`、`--list`、`-h`。
 写 rc 文件靠 `_addlineto`（`grep -F` 命中就不重复写）。
 `external/`、`bin/` 是下载/编译产物，已在 `.gitignore` 里。
+**git alias 不在 `setup_for_git` 里**，统一在 `Makefile` 的 `git-aliases`（两个平台共用一套）；
+`setup_for_git` 只留 sslverify / excludesfile / oh-my-zsh 那几项。
 
 ### Windows 侧：`setup.ps1` + `windows/`
 
@@ -52,6 +55,7 @@
 ```
 setup                     # Linux/macOS 初始化（bash）
 setup.ps1                 # Windows 初始化入口
+Makefile                  # 通用命令入口，make help 按分组列出
 common/                   # Windows 和 Linux 共用的文件（目前只有说明）
 windows/apps.ps1          # 应用清单 $Catalog + 选择/安装流程
 windows/pwsh_keys.ps1     # 命令行键位（写 CurrentUserAllHosts profile）
@@ -113,6 +117,10 @@ windows/helpers.ps1       # 公共函数
 10. **提交信息**：按用户的全局规则——主题用祈使句、首字母大写、≤50 字符、结尾不加标点；
     正文按 72 列折行，别重复主题；**正文里避免 `$` 字符**（终端会吞掉，改写成
     "the PowerShell profile" 之类）。
+
+11. **Makefile 命令**：目标名用「分组-动作」（如 `git-aliases`），同时更新 `help` 里对应
+    分组并加进 `.PHONY`，命令要幂等。文案用英文（原生 make 在 Windows 控制台输出中文
+    会乱码），注释用中文。
 
 ## 验证（不要动真机）
 
