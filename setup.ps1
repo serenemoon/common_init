@@ -2,26 +2,26 @@
 <#
   Windows 初始化脚本
 
-  步骤:
-    choco            - 安装 chocolatey（已安装则跳过）
-    build_essentials - 列出可安装的应用（cmake / make），选择安装
-    gui              - 安装装机必选应用（notepad++ / obsidian / ultraedit / listary）
+  先确保装好 chocolatey，然后列出可执行的步骤，让用户选要执行哪些。
+
+    apps.ps1                      安装应用
+    pwsh_keys.ps1                 配置命令行键位（Ctrl+U / Ctrl+K）
+    fzf-for-windows-terminal.ps1  配置 fzf 快捷键（Ctrl+F / Ctrl+R / Alt+C）
+    mkcd.ps1                      用 uv 装一套 Linux 命令（ls / cat / grep / tail ...）
 
   用法:
-    .\setup.ps1                     # 执行默认步骤，build essentials 会询问装哪些应用
-    .\setup.ps1 -All                # 执行全部步骤，各步骤都安装全部应用（不再询问）
-    .\setup.ps1 -NoBuildEssentials  # 跳过 build essentials
-    .\setup.ps1 -NoGui              # 跳过装机必选应用
-    .\setup.ps1 -List               # 只列出步骤状态和可安装的应用
+    .\setup.ps1                 # 交互选择步骤（默认都不执行，y = 全部执行）
+    .\setup.ps1 -Steps 2        # 只执行第 2 步
+    .\setup.ps1 -Steps pwsh_keys,fzf
+    .\setup.ps1 -List           # 只看状态，不做改动
+    .\setup.ps1 -Help           # 显示本帮助
 #>
 
 [CmdletBinding()]
 param(
-  [switch]$BuildEssentials,
-  [switch]$NoBuildEssentials,
-  [switch]$Gui,
-  [switch]$NoGui,
-  [switch]$All,
+  # 只执行指定步骤（编号或名字，多个用逗号分隔）；不给就交互选择
+  [string[]]$Steps = @(),
+  # 只列出步骤状态和应用清单，不做任何改动
   [switch]$List,
   [switch]$Help
 )
@@ -32,20 +32,113 @@ $ErrorActionPreference = 'Stop'
 . (Join-Path $PSScriptRoot 'windows/helpers.ps1')
 
 $ChocoInstallUrl = 'https://community.chocolatey.org/install.ps1'
-$BuildEssentialsScript = Join-Path $PSScriptRoot 'windows/build.ps1'
-$GuiScript = Join-Path $PSScriptRoot 'windows/gui.ps1'
+
+# 可执行的步骤，按这个顺序执行；要加新步骤在这张表里加一行即可
+$StepTable = @(
+  [pscustomobject]@{
+    Name = 'apps'
+    Script = 'windows/apps.ps1'
+    Description = '安装应用'
+  }
+  [pscustomobject]@{
+    Name = 'pwsh_keys'
+    Script = 'windows/pwsh_keys.ps1'
+    Description = '配置命令行键位（Ctrl+U / Ctrl+K）'
+  }
+  [pscustomobject]@{
+    Name = 'fzf'
+    Script = 'windows/fzf-for-windows-terminal.ps1'
+    Description = '配置 fzf 快捷键（Ctrl+F / Ctrl+R / Alt+C）'
+  }
+  [pscustomobject]@{
+    Name = 'mkcd'
+    Script = 'windows/mkcd.ps1'
+    Description = '用 uv 装一套 Linux 命令（需要 uv）'
+  }
+)
 
 function Show-Usage {
   Write-Host @'
 用法: .\setup.ps1 [选项]
-  -BuildEssentials      启用 build essentials 步骤（默认启用）
-  -NoBuildEssentials    跳过 build essentials 步骤
-  -Gui                  启用装机必选应用步骤（默认启用）
-  -NoGui                跳过装机必选应用步骤
-  -All                  启用所有步骤，且每个步骤都安装全部应用（不再询问）
-  -List                 只列出步骤状态和可安装的应用
-  -Help                 显示本帮助
+  -Steps <编号或名字>  只执行指定步骤，多个用逗号分隔
+                       例: -Steps 2    -Steps pwsh_keys,fzf
+                       不给这个参数时交互选择（回车 = 都不执行，y = 全部）
+  -List                只列出步骤状态和应用清单，不做任何改动
+  -Help                显示本帮助
 '@
+}
+
+# 列出步骤菜单，形如: [ 1]: apps.ps1  "安装应用"
+function Show-StepMenu {
+  param([object[]]$StepTable)
+
+  $width = 0
+  foreach ($step in $StepTable) {
+    $file = Split-Path -Leaf $step.Script
+    if ($file.Length -gt $width) { $width = $file.Length }
+  }
+  $format = '[{0,2}]: {1,-' + ($width + 1) + '} "{2}"'
+
+  Write-Host '可执行的步骤:'
+  for ($i = 0; $i -lt $StepTable.Count; $i++) {
+    $step = $StepTable[$i]
+    Write-Host ($format -f ($i + 1), (Split-Path -Leaf $step.Script), $step.Description)
+  }
+}
+
+# 交互式选择步骤，返回选中的步骤（空数组表示什么都不执行）
+function Read-StepSelection {
+  param([object[]]$StepTable)
+
+  Show-StepMenu -StepTable $StepTable
+  Write-Host '  输入编号（多个用逗号分隔）= 只执行这几个，y = 全部执行，n 或直接回车 = 都不执行'
+
+  $answer = Read-Host '请选择'
+  # 直接回车（含非交互场景下 Read-Host 返回 $null）= 什么都不执行
+  if ([string]::IsNullOrWhiteSpace($answer)) { return @() }
+  $answer = $answer.Trim()
+  if ($answer -match '^(y|yes|a|all)$') { return @($StepTable) }
+  if ($answer -match '^(n|no)$') { return @() }
+
+  return @(Resolve-StepSelection -StepTable $StepTable -Tokens @($answer))
+}
+
+# 把编号 / 名字 / 脚本文件名解析成步骤，未知的忽略
+function Resolve-StepSelection {
+  param(
+    [object[]]$StepTable,
+    [string[]]$Tokens
+  )
+
+  $selected = New-Object System.Collections.Generic.List[object]
+  foreach ($raw in $Tokens) {
+    foreach ($token in ($raw -split '[,;\s]+')) {
+      if (-not $token) { continue }
+
+      $index = 0
+      $match = $null
+      if ([int]::TryParse($token, [ref]$index)) {
+        if ($index -ge 1 -and $index -le $StepTable.Count) { $match = $StepTable[$index - 1] }
+      } else {
+        $match = $StepTable | Where-Object {
+          $_.Name -eq $token -or
+          (Split-Path -Leaf $_.Script) -eq $token -or
+          [System.IO.Path]::GetFileNameWithoutExtension($_.Script) -eq $token
+        } | Select-Object -First 1
+      }
+
+      if (-not $match) {
+        Write-Warn "忽略无法识别的步骤: $token"
+        continue
+      }
+      if (-not ($selected | Where-Object { $_.Name -eq $match.Name })) {
+        $selected.Add($match)
+      }
+    }
+  }
+  # 注意：这里不能写成 @($selected)，PS 5.1 在 StrictMode 下对泛型 List 用 @() 会抛
+  # ArgumentException（参数类型不匹配）
+  return $selected.ToArray()
 }
 
 function Install-Choco {
@@ -58,20 +151,6 @@ function Install-Choco {
   Invoke-Expression $installScript
   Update-PathFromRegistry
   Write-Step 'choco 安装完成'
-}
-
-# 调用步骤脚本：-All 时不再询问，直接安装该步骤的全部应用
-function Invoke-PackageStep {
-  param(
-    [string]$Path,
-    [string]$Name,
-    [switch]$InstallAll
-  )
-
-  if ($InstallAll) { & $Path -All } else { & $Path }
-  if ($LASTEXITCODE -ne 0) {
-    Write-Warn "$Name 有应用安装失败，详见上方日志"
-  }
 }
 
 # 提权重跑用：把当前命令行参数原样拼回去
@@ -98,34 +177,25 @@ function Get-RelaunchArguments {
 
 if ($Help) { Show-Usage; exit 0 }
 
-# -- 步骤开关: 默认值，可用参数覆盖 ------------------------------------------
-$EnableBuildEssentials = $true
-if ($BuildEssentials) { $EnableBuildEssentials = $true }
-if ($NoBuildEssentials) { $EnableBuildEssentials = $false } # 显式 -No 优先
-
-$EnableGui = $true
-if ($Gui) { $EnableGui = $true }
-if ($NoGui) { $EnableGui = $false } # 显式 -No 优先
-
 $chocoPath = Get-ChocoPath
 
 if ($List) {
-  Write-Host '步骤状态:'
   if ($chocoPath) {
-    Write-Host "  choco            : 已安装 $(& $chocoPath --version)"
+    Write-Host "choco : 已安装 $(& $chocoPath --version)"
   } else {
-    Write-Host '  choco            : 未安装'
+    Write-Host 'choco : 未安装'
   }
-  Write-Host "  build_essentials : $([int]$EnableBuildEssentials)"
-  Write-Host "  gui              : $([int]$EnableGui)"
   Write-Host ''
-  & $BuildEssentialsScript -List
-  Write-Host ''
-  & $GuiScript -List
+  Show-StepMenu -StepTable $StepTable
+  foreach ($step in $StepTable) {
+    Write-Host ''
+    & (Join-Path $PSScriptRoot $step.Script) -List
+  }
   exit 0
 }
 
-# choco 的安装需要管理员权限，非管理员时提权重跑
+# choco 的安装需要管理员权限，非管理员时提权重跑。
+# 放在交互选择之前，免得提权后又问一遍。
 if (-not (Test-Admin)) {
   if (-not $PSCommandPath) {
     Write-Error '无法提权：请以文件方式运行本脚本，例如 powershell -ExecutionPolicy Bypass -File setup.ps1'
@@ -139,7 +209,7 @@ if (-not (Test-Admin)) {
   exit 0
 }
 
-# -- 步骤 1: choco -----------------------------------------------------------
+# -- 步骤 0: choco -----------------------------------------------------------
 if ($chocoPath) {
   Write-Step "choco 已安装（$(& $chocoPath --version)），跳过"
 } else {
@@ -147,16 +217,29 @@ if ($chocoPath) {
   $chocoPath = Get-ChocoPathOrThrow
 }
 
-# -- 步骤 2: build essentials ------------------------------------------------
-if ($EnableBuildEssentials) {
-  Invoke-PackageStep -Path $BuildEssentialsScript -Name 'build essentials' -InstallAll:$All
+# -- 选择要执行的步骤 --------------------------------------------------------
+if ($Steps.Count -gt 0) {
+  $selected = @(Resolve-StepSelection -StepTable $StepTable -Tokens $Steps)
 } else {
-  Write-Step 'build essentials 已跳过'
+  $selected = @(Read-StepSelection -StepTable $StepTable)
 }
 
-# -- 步骤 3: 装机必选应用 ---------------------------------------------------
-if ($EnableGui) {
-  Invoke-PackageStep -Path $GuiScript -Name '装机必选应用' -InstallAll:$All
-} else {
-  Write-Step '装机必选应用已跳过'
+if ($selected.Count -eq 0) {
+  Write-Step '没有选择任何步骤，退出'
+  exit 0
+}
+
+# -- 按顺序执行选中的步骤 ----------------------------------------------------
+foreach ($step in $StepTable) {
+  if (-not ($selected | Where-Object { $_.Name -eq $step.Name })) {
+    Write-Step "跳过 $($step.Name)"
+    continue
+  }
+
+  $path = Join-Path $PSScriptRoot $step.Script
+  Write-Step "执行 $($step.Name)（$(Split-Path -Leaf $path)）"
+  & $path
+  if ($LASTEXITCODE -ne 0) {
+    Write-Warn "$($step.Name) 执行失败，详见上方日志"
+  }
 }

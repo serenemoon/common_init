@@ -60,3 +60,35 @@ function Get-ChocoInstalledPackages {
   }
   return $packages
 }
+
+# 把一行写进文件；文件里已经有“一模一样”的一行（区分大小写）就跳过。
+# 返回 $true 表示这次写入了，$false 表示已存在（或该行为空）。
+function WriteOnceToFile {
+  param(
+    [Parameter(Mandatory = $true)][string]$Path,
+    [Parameter(Mandatory = $true)][string]$Line
+  )
+
+  if ([string]::IsNullOrWhiteSpace($Line)) { return $false }
+
+  if (Test-Path -LiteralPath $Path) {
+    foreach ($existing in (Get-Content -LiteralPath $Path)) {
+      if ($existing -ceq $Line) { return $false }
+    }
+  } else {
+    $dir = Split-Path -Parent $Path
+    if ($dir -and -not (Test-Path -LiteralPath $dir)) {
+      New-Item -ItemType Directory -Path $dir -Force | Out-Null
+    }
+    New-Item -ItemType File -Path $Path -Force | Out-Null
+  }
+
+  # 上一行可能没有以换行结尾，先补一个，免得和本行拼在一起
+  $text = $Line + [Environment]::NewLine
+  if ((Get-Item -LiteralPath $Path).Length -gt 0) {
+    $content = [System.IO.File]::ReadAllText($Path)
+    if (-not $content.EndsWith("`n")) { $text = [Environment]::NewLine + $text }
+  }
+  [System.IO.File]::AppendAllText($Path, $text, (New-Object System.Text.UTF8Encoding -ArgumentList $true))
+  return $true
+}
