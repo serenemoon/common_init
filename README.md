@@ -72,6 +72,7 @@ powershell -ExecutionPolicy Bypass -File .\setup.ps1
    [ 2]: pwsh_keys.ps1                 "配置命令行键位（Ctrl+U / Ctrl+K）"
    [ 3]: fzf-for-windows-terminal.ps1  "配置 fzf 快捷键（Ctrl+F / Ctrl+R / Alt+C）"
    [ 4]: mkcd.ps1                      "用 uv 装一套 Linux 命令（需要 uv）"
+   [ 5]: psmux.ps1                     "拷 tmux 配置到用户目录"
    ```
 
    选中的步骤按上面的顺序执行，没选中的跳过；也可以用 `-Steps` 在命令行直接指定。
@@ -197,6 +198,29 @@ powershell -File .\windows\mkcd.ps1 -EnvDir E:\.mkcd -Python 3.13
 拒绝就只改用户 PATH），并清掉冲突的 PowerShell 别名（`ls` / `cat` / `rm` / `pwd` /
 `tee` 等）。所以装完要**新开一个终端**。想撒销：先跑 `D:\.mkcd\.venv\Scripts\mkcd-uninstall.exe`，
 再删掉整个 `D:\.mkcd` 目录即可。
+
+### tmux 配置（psmux）
+
+`windows\psmux.ps1` 把 `common\` 下的 `.tmux.*` 拷到用户根目录，配合应用清单里的
+`psmux`（Windows 版 tmux）使用：
+
+```
+common\.tmux.conf        ->  %USERPROFILE%\.tmux.conf
+common\.tmux.conf.local  ->  %USERPROFILE%\.tmux.conf.local
+```
+
+内容相同的文件会跳过，所以重复执行没有副作用；以后往 `common/` 里放新的 `.tmux.*`
+也会一起被拷过去。
+
+```powershell
+.\setup.ps1 -Steps psmux                                   # 跟着 setup 一起拷
+powershell -File .\windows\psmux.ps1 -List                  # 看状态（只读）
+powershell -File .\windows\psmux.ps1                        # 拷到用户根目录
+powershell -File .\windows\psmux.ps1 -Destination D:\x      # 拷到指定目录
+```
+
+Linux 侧不走这个脚本：`./setup` 的 `setup_for_tmux_conf` 直接把
+`common\.tmux.conf.local` 软链到 `~/.config/tmux/`。
 
 新增要安装的工具，在 `windows\apps.ps1` 的 `$Catalog` 里加一行即可，setup.ps1 不用改。
 如果某个工具可能不是用 choco 装的（比如 Listary），可以给条目加 `Probe`：

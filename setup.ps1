@@ -8,6 +8,7 @@
     pwsh_keys.ps1                 配置命令行键位（Ctrl+U / Ctrl+K）
     fzf-for-windows-terminal.ps1  配置 fzf 快捷键（Ctrl+F / Ctrl+R / Alt+C）
     mkcd.ps1                      用 uv 装一套 Linux 命令（ls / cat / grep / tail ...）
+    psmux.ps1                     把 common 下的 tmux 配置拷到用户目录
 
   用法:
     .\setup.ps1                 # 交互选择步骤（默认都不执行，y = 全部执行）
@@ -54,6 +55,11 @@ $StepTable = @(
     Name = 'mkcd'
     Script = 'windows/mkcd.ps1'
     Description = '用 uv 装一套 Linux 命令（需要 uv）'
+  }
+  [pscustomobject]@{
+    Name = 'psmux'
+    Script = 'windows/psmux.ps1'
+    Description = '拷 tmux 配置到用户目录'
   }
 )
 

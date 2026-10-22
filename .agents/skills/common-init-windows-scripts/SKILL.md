@@ -10,11 +10,12 @@ description: Use when adding, editing, or debugging the Windows setup scripts in
 ## 布局
 
 - `setup.ps1`（仓库根）：入口，先装 `choco`，再列出 `$StepTable` 里的步骤让用户选（默认都不执行）。
-- `common/`：两个平台共用的文件（目前只有 `README.md` 占位）。Windows 脚本用 `Join-Path $PSScriptRoot '..\common'` 引用，bash 用 `$(dirname "$(readlink -f "$0")")/common`；只放数据/配置，某一边专用的脚本留在 `windows/`。
+- `common/`：两个平台共用的文件（`README.md` + tmux 配置 `.tmux.conf` / `.tmux.conf.local`）。Windows 脚本用 `Join-Path $PSScriptRoot '..\common'` 引用，bash 用 `$(dirname "$(readlink -f "$0")")/common`；只放数据/配置，某一边专用的脚本留在 `windows/`。
 - `windows/helpers.ps1`：通用函数（`Write-Step`、`Write-Warn`、`Test-Admin`、`Update-PathFromRegistry`、`Get-ChocoPath`、`Get-ChocoPathOrThrow`、`Get-ChocoInstalledPackages`、`WriteOnceToFile`）。只定义函数、无副作用，被其他脚本 dot-source。
 - `windows/apps.ps1`：唯一的应用清单 `$Catalog` + 选择/安装流程（`Show-PackageCatalog`、`Read-PackageSelection`、`Resolve-PackageTargets`、`Install-PackageCatalog`）。
 - `windows/pwsh_keys.ps1`：把 `Ctrl+U` / `Ctrl+K` 两行 `Set-PSReadLineKeyHandler` 写进 `CurrentUserAllHosts` profile，靠 `WriteOnceToFile` 保证只写一次；支持 `-List` / `-Remove` / `-ProfilePath`。
 - `windows/mkcd.ps1`：用 uv 在 `D:\.mkcd` 建自包含环境（`python install --install-dir` + `venv` + `pip install mkcd`），最后 `uv run python -c 'import mkcd; mkcd.install()'` 注册命令；支持 `-List` / `-Force` / `-EnvDir` / `-Python`。联网的 uv 命令（`python install` / `pip install` / `run`）都带 `--system-certs`——uv 默认只信内置的 Mozilla 根证书，公司网络的 TLS 解密代理（Zscaler 等）下会报 `UnknownIssuer`；注意 `uv run` 里这个开关必须放在 `python` 之前，否则会被当成传给 python 的参数。
+- `windows/psmux.ps1`：把 `common\` 下的 `.tmux.*` 拷到用户根目录（默认 `$HOME`），用 SHA256 比较内容，相同就跳过；支持 `-List` / `-Destination`。
 - `windows/fzf-for-windows-terminal.ps1`：安装器——装 PSFzf 模块并把快捷键选项写进 `$PROFILE`。它**不再**靠被 dot-source 生效，所以 profile 里不应该留 dot-source 它的行。
 
 ## 铁律：`.ps1` 必须存成 UTF-8 with BOM

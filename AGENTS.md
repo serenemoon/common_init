@@ -20,6 +20,8 @@
 参数形如 `--tmux-conf` / `--no-tmux-conf`，另有 `--all`、`--list`、`-h`。
 写 rc 文件靠 `_addlineto`（`grep -F` 命中就不重复写）。
 `external/`、`bin/` 是下载/编译产物，已在 `.gitignore` 里。
+`.tmux.conf.local` 等 tmux 配置放在 `common/`，`setup_for_tmux_conf` 从那里软链到
+`~/.config/tmux/`（Windows 侧的 `psmux.ps1` 则是拷到用户根目录）。
 **git alias 不在 `setup_for_git` 里**，统一在 `Makefile` 的 `git-aliases`（两个平台共用一套）；
 `setup_for_git` 只留 sslverify / excludesfile / oh-my-zsh 那几项。
 
@@ -35,7 +37,8 @@
 | `apps` | `windows/apps.ps1` | 按 `$Catalog` 安装应用，已装的自动跳过 |
 | `pwsh_keys` | `windows/pwsh_keys.ps1` | 把 `Ctrl+U` / `Ctrl+K` 写进 `CurrentUserAllHosts` profile |
 | `fzf` | `windows/fzf-for-windows-terminal.ps1` | 装 PSFzf 模块，把 `Ctrl+F` / `Ctrl+R` / `Alt+C` 的配置块写进 `$PROFILE` |
-| `mkcd` | `windows/mkcd.ps1` | 用 uv 在 `D:\.mkcd` 建独立环境装 mkcd（Linux 命令集），需要 uv |
+| `mkcd` | `windows/mkcd.ps1` | 用 uv 在 `D:\.mkcd` 建独立环境并装 mkcd（Linux 命令集），需要 uv |
+| `psmux` | `windows/psmux.ps1` | 把 `common\.tmux.*` 拷到用户根目录（内容相同则跳过） |
 
 `windows/helpers.ps1` 只放无副作用的公共函数（`Write-Step`、`Write-Warn`、`Test-Admin`、
 `Get-ChocoPath`、`Get-ChocoInstalledPackages`、`WriteOnceToFile` …），被其他脚本 dot-source。
@@ -56,13 +59,13 @@
 setup                     # Linux/macOS 初始化（bash）
 setup.ps1                 # Windows 初始化入口
 Makefile                  # 通用命令入口，make help 按分组列出
-common/                   # Windows 和 Linux 共用的文件（目前只有说明）
+common/                   # 两个平台共用的文件（.tmux.conf / .tmux.conf.local 等）
 windows/apps.ps1          # 应用清单 $Catalog + 选择/安装流程
 windows/pwsh_keys.ps1     # 命令行键位（写 CurrentUserAllHosts profile）
 windows/fzf-for-windows-terminal.ps1  # PSFzf 快捷键（写 $PROFILE 配置块）
 windows/mkcd.ps1          # 用 uv 装 mkcd（Linux 命令集）
+windows/psmux.ps1         # 把 common 下的 tmux 配置拷到用户目录
 windows/helpers.ps1       # 公共函数
-.tmux.conf.local          # oh-my-tmux 本地覆盖
 .agents/skills/…          # 本仓库的 agent skill（Windows 脚本细则）
 ```
 

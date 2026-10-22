@@ -39,6 +39,7 @@ $Catalog = @(
   [pscustomobject]@{ Name = 'nvm';      ChocoId = 'nvm';      Description = 'nvm Node.js 版本管理' }
   [pscustomobject]@{ Name = 'nodejs';   ChocoId = 'nodejs';   Description = 'Node.js 运行时' }
   [pscustomobject]@{ Name = 'uv';       ChocoId = 'uv';       Description = 'uv Python 包管理' }
+  [pscustomobject]@{ Name = 'psmux';       ChocoId = 'psmux';       Description = 'windows tmux' }
   [pscustomobject]@{ Name = 'git';       ChocoId = 'git';       Description = 'git version control tool' }
   [pscustomobject]@{ Name = 'gitui';       ChocoId = 'gitui';       Description = 'git version control tool ui' }
   [pscustomobject]@{ Name = 'unzip';    ChocoId = 'unzip';    Description = 'unzip 解压工具' }
