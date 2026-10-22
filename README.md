@@ -171,13 +171,18 @@ PSFzf 的 `Alt+C` 选完目录后会 `AcceptLine`（相当于回车执行当前�
 Python 环境，装上 PyPI 上的 [mkcd](https://pypi.org/project/mkcd/)——它把 `ls` / `cat` /
 `grep` / `tail` / `tar` 等 Linux 命令带到 Windows 上：
 
-1. `uv python install 3.14 --install-dir D:\.mkcd\python`（Python 也装在这个目录里）
+1. `uv python install 3.14 --install-dir D:\.mkcd\python --system-certs`（Python 也装在这个目录里）
 2. `uv venv D:\.mkcd\.venv`
-3. `uv pip install mkcd`
-4. `uv run python -c "import mkcd; mkcd.install()"`
+3. `uv pip install mkcd --system-certs`
+4. `uv run --no-project --system-certs python -c "import mkcd; mkcd.install()"`
 
 前提是有 `uv`（在应用清单里，装应用时勾上 `uv`；没有会直接报错退出）。
 已经装过的步骤会自动跳过，重复执行不会重复下载。
+
+联网的 uv 命令都带 `--system-certs`：uv 默认只信自己内置的 Mozilla 根证书，不读
+Windows 证书存储，碰到公司网络的 TLS 解密代理（Zscaler 之类）会报
+`invalid peer certificate: UnknownIssuer`。带上这个开关就改用系统证书
+（uv 0.13 起旧的 `--native-tls` 已弃用，改名成 `--system-certs`）。
 
 ```powershell
 .\setup.ps1 -Steps mkcd                                    # 单装 mkcd

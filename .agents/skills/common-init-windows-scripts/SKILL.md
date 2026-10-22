@@ -14,7 +14,7 @@ description: Use when adding, editing, or debugging the Windows setup scripts in
 - `windows/helpers.ps1`：通用函数（`Write-Step`、`Write-Warn`、`Test-Admin`、`Update-PathFromRegistry`、`Get-ChocoPath`、`Get-ChocoPathOrThrow`、`Get-ChocoInstalledPackages`、`WriteOnceToFile`）。只定义函数、无副作用，被其他脚本 dot-source。
 - `windows/apps.ps1`：唯一的应用清单 `$Catalog` + 选择/安装流程（`Show-PackageCatalog`、`Read-PackageSelection`、`Resolve-PackageTargets`、`Install-PackageCatalog`）。
 - `windows/pwsh_keys.ps1`：把 `Ctrl+U` / `Ctrl+K` 两行 `Set-PSReadLineKeyHandler` 写进 `CurrentUserAllHosts` profile，靠 `WriteOnceToFile` 保证只写一次；支持 `-List` / `-Remove` / `-ProfilePath`。
-- `windows/mkcd.ps1`：用 uv 在 `D:\.mkcd` 建自包含环境（`python install --install-dir` + `venv` + `pip install mkcd`），最后 `uv run python -c 'import mkcd; mkcd.install()'` 注册命令；支持 `-List` / `-Force` / `-EnvDir` / `-Python`。
+- `windows/mkcd.ps1`：用 uv 在 `D:\.mkcd` 建自包含环境（`python install --install-dir` + `venv` + `pip install mkcd`），最后 `uv run python -c 'import mkcd; mkcd.install()'` 注册命令；支持 `-List` / `-Force` / `-EnvDir` / `-Python`。联网的 uv 命令（`python install` / `pip install` / `run`）都带 `--system-certs`——uv 默认只信内置的 Mozilla 根证书，公司网络的 TLS 解密代理（Zscaler 等）下会报 `UnknownIssuer`；注意 `uv run` 里这个开关必须放在 `python` 之前，否则会被当成传给 python 的参数。
 - `windows/fzf-for-windows-terminal.ps1`：安装器——装 PSFzf 模块并把快捷键选项写进 `$PROFILE`。它**不再**靠被 dot-source 生效，所以 profile 里不应该留 dot-source 它的行。
 
 ## 铁律：`.ps1` 必须存成 UTF-8 with BOM

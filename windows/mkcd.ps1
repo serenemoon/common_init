@@ -12,6 +12,11 @@
   （ls / cat / rm / pwd ...）；它还会问要不要用管理员权限改系统 PATH，
   不同意就退化成只改用户 PATH。装完要新开一个终端才生效。
 
+  联网的 uv 命令都带 --system-certs：uv 默认只信内置的 Mozilla 根证书，不读
+  Windows 证书存储，碰到公司网络的 TLS 解密代理（如 Zscaler）会报
+  "invalid peer certificate: UnknownIssuer"。带上这个开关就改用系统证书
+  （uv 0.13 起 --native-tls 已弃用，改名成 --system-certs）。
+
   前提: uv（在 apps.ps1 的清单里，setup.ps1 选步骤 1 时勾上 uv）
 
   用法:
@@ -167,7 +172,7 @@ if ($pyExe -and -not $Force) {
   Write-Step "Python 已安装在 $PythonDir，跳过"
 } else {
   Write-Step "用 uv 安装 Python $Python 到 $PythonDir"
-  & $uv.Source python install $Python --install-dir $PythonDir | Out-Host
+  & $uv.Source python install $Python --install-dir $PythonDir --system-certs | Out-Host
   if ($LASTEXITCODE -ne 0) {
     Write-Warn "Python $Python 安装失败（uv 退出码 $LASTEXITCODE）"
     exit 1
@@ -193,7 +198,7 @@ if ((Test-Path -LiteralPath $VenvPython) -and -not $Force) {
 
 # -- 3. 装 mkcd 包 -----------------------------------------------------------
 Write-Step '安装 mkcd 包（uv pip install mkcd）'
-& $uv.Source pip install --python $VenvPython mkcd | Out-Host
+& $uv.Source pip install --python $VenvPython --system-certs mkcd | Out-Host
 if ($LASTEXITCODE -ne 0) {
   Write-Warn "mkcd 安装失败（uv 退出码 $LASTEXITCODE）"
   exit 1
@@ -207,7 +212,8 @@ if ((Test-OnPath -Directory $MkcdBin) -and -not $Force) {
   Write-Step '执行 mkcd.install()（可能会问是否用管理员权限改系统 PATH）'
   Push-Location $EnvDir
   try {
-    & $uv.Source run --no-project python -c 'import mkcd; mkcd.install()' | Out-Host
+    # --system-certs 必须放在 python 之前，后面的参数会原样传给 python
+    & $uv.Source run --no-project --system-certs python -c 'import mkcd; mkcd.install()' | Out-Host
     $installExit = $LASTEXITCODE
   } finally {
     Pop-Location
