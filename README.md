@@ -25,6 +25,7 @@ make git-aliases    # 配置下面的 git alias
 | `aa` | `add --all` |
 | `cp` | `cherry-pick` |
 | `cl` | `clean -f -d` |
+| `pr` | `pull --rebase` |
 | `rsh` | `reset --hard HEAD` |
 | `rsh1` | `reset --hard HEAD~` |
 | `dfh` | `diff HEAD` |

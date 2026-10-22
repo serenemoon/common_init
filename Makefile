@@ -35,6 +35,7 @@ git-aliases:
 	@git config --global alias.aa "add --all"
 	@git config --global alias.cp cherry-pick
 	@git config --global alias.cl "clean -f -d"
+	@git config --global alias.pr "pull --rebase"
 	@git config --global alias.rsh "reset --hard HEAD"
 	@git config --global alias.rsh1 "reset --hard HEAD~"
 	@git config --global alias.dfh "diff HEAD"
@@ -47,4 +48,4 @@ git-aliases:
 	@git config --global alias.logf "log --format=fuller"
 	@git config --global alias.rl reflog
 	@git config --global alias.rlf "reflog --pretty=fuller"
-	@echo 'Configured git aliases: st co br cb cm cma cme aa cp cl rsh rsh1 dfh dfhs df dfs lg ll logs logf rl rlf'
+	@echo 'Configured git aliases: st co br cb cm cma cme aa cp cl pr rsh rsh1 dfh dfhs df dfs lg ll logs logf rl rlf'
