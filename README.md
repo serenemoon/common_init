@@ -199,28 +199,28 @@ powershell -File .\windows\mkcd.ps1 -EnvDir E:\.mkcd -Python 3.13
 `tee` 等）。所以装完要**新开一个终端**。想撒销：先跑 `D:\.mkcd\.venv\Scripts\mkcd-uninstall.exe`，
 再删掉整个 `D:\.mkcd` 目录即可。
 
-### tmux 配置（psmux）
+### psmux 配置
 
-`windows\psmux.ps1` 把 `common\` 下的 `.tmux.*` 拷到用户根目录，配合应用清单里的
-`psmux`（Windows 版 tmux）使用：
+`windows\psmux.ps1` 把 `common\.psmux.conf` 拷到用户根目录，配合应用清单里的 `psmux`
+（Windows 版 tmux）使用：
 
 ```
-common\.tmux.conf        ->  %USERPROFILE%\.tmux.conf
-common\.tmux.conf.local  ->  %USERPROFILE%\.tmux.conf.local
+common\.psmux.conf  ->  %USERPROFILE%\.psmux.conf
 ```
 
-内容相同的文件会跳过，所以重复执行没有副作用；以后往 `common/` 里放新的 `.tmux.*`
-也会一起被拷过去。
+内容相同时跳过，所以重复执行没有副作用。**源文件是空的时候会拒绝覆盖**（免得把已有的
+`~\.psmux.conf` 清空），确实想覆盖加 `-Force`。
 
 ```powershell
 .\setup.ps1 -Steps psmux                                   # 跟着 setup 一起拷
 powershell -File .\windows\psmux.ps1 -List                  # 看状态（只读）
 powershell -File .\windows\psmux.ps1                        # 拷到用户根目录
 powershell -File .\windows\psmux.ps1 -Destination D:\x      # 拷到指定目录
+powershell -File .\windows\psmux.ps1 -Force                 # 源文件为空也照拷
 ```
 
-Linux 侧不走这个脚本：`./setup` 的 `setup_for_tmux_conf` 直接把
-`common\.tmux.conf.local` 软链到 `~/.config/tmux/`。
+Linux 侧不走这个脚本：`./setup` 的 `setup_for_tmux_conf` 克隆 oh-my-tmux 并把
+`.tmux.conf` 软链到 `~/.config/tmux/`（`common\.tmux.conf.local` 存在时才会再链本地覆盖）。
 
 新增要安装的工具，在 `windows\apps.ps1` 的 `$Catalog` 里加一行即可，setup.ps1 不用改。
 如果某个工具可能不是用 choco 装的（比如 Listary），可以给条目加 `Probe`：

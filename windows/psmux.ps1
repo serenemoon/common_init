@@ -1,20 +1,21 @@
 ﻿#Requires -Version 5.1
 <#
-  psmux — 把 common\ 下的 .tmux.* 配置拷到用户根目录
+  psmux — 把 common\ 下的 .psmux.conf 拷到用户根目录
 
-  仓库里的 tmux 配置统一放在 common\ 下：Linux 侧由 ./setup 软链到
-  ~/.config/tmux/，Windows 侧直接拷到用户根目录：
+  psmux 是 Windows 上的 tmux，读用户根目录的 .psmux.conf：
 
-    common\.tmux.conf        ->  %USERPROFILE%\.tmux.conf
-    common\.tmux.conf.local  ->  %USERPROFILE%\.tmux.conf.local
+    common\.psmux.conf  ->  %USERPROFILE%\.psmux.conf
 
-  common\ 下以后再加 .tmux.* 的文件也会一起拷过去。
-  内容相同的文件会跳过，所以重复执行没有副作用。
+  内容相同时跳过，所以重复执行没有副作用。
+
+  安全阀：仓库里的源文件要是空的，默认不覆盖（免得把已有的配置清空），
+  确实想覆盖再加 -Force。
 
   用法:
-    .\psmux.ps1                      # 拷贝（已一致的文件跳过）
+    .\psmux.ps1                      # 拷贝（已一致时跳过）
     .\psmux.ps1 -List                # 只看状态，不做改动
     .\psmux.ps1 -Destination D:\x    # 拷到指定目录（默认用户根目录）
+    .\psmux.ps1 -Force               # 源文件为空也照拷
 #>
 
 [CmdletBinding()]
@@ -22,7 +23,9 @@ param(
   # 拷到哪里，默认用户根目录（$HOME）
   [string]$Destination = $HOME,
   # 只看状态，不做改动
-  [switch]$List
+  [switch]$List,
+  # 源文件为空时也照拷（默认会拒绝，避免清空已有配置）
+  [switch]$Force
 )
 
 Set-StrictMode -Version Latest
@@ -30,75 +33,68 @@ $ErrorActionPreference = 'Stop'
 
 . (Join-Path $PSScriptRoot 'helpers.ps1')
 
+$ConfigName = '.psmux.conf'
 $CommonDir = Join-Path (Split-Path -Parent $PSScriptRoot) 'common'
+$Source = Join-Path $CommonDir $ConfigName
 if ([string]::IsNullOrWhiteSpace($Destination)) { $Destination = $HOME }
-
-# common\ 下所有 .tmux.* 文件（没有则返回空数组）
-function Get-TmuxFiles {
-  param([string]$Dir)
-
-  if (-not (Test-Path -LiteralPath $Dir)) { return @() }
-  return @(Get-ChildItem -LiteralPath $Dir -File |
-    Where-Object { $_.Name -like '.tmux.*' } |
-    Sort-Object Name)
-}
+$Target = Join-Path $Destination $ConfigName
 
 # 两个文件内容是否一致；目标不存在时返回 $false
 function Test-SameContent {
   param(
-    [string]$Source,
-    [string]$Target
+    [string]$SourcePath,
+    [string]$TargetPath
   )
 
-  if (-not (Test-Path -LiteralPath $Target)) { return $false }
-  $sourceHash = (Get-FileHash -LiteralPath $Source -Algorithm SHA256).Hash
-  $targetHash = (Get-FileHash -LiteralPath $Target -Algorithm SHA256).Hash
+  if (-not (Test-Path -LiteralPath $TargetPath)) { return $false }
+  $sourceHash = (Get-FileHash -LiteralPath $SourcePath -Algorithm SHA256).Hash
+  $targetHash = (Get-FileHash -LiteralPath $TargetPath -Algorithm SHA256).Hash
   return $sourceHash -eq $targetHash
 }
 
-$files = @(Get-TmuxFiles -Dir $CommonDir)
-if ($files.Count -eq 0) {
-  Write-Warn "没有找到 $CommonDir 下的 .tmux.* 文件"
+if (-not (Test-Path -LiteralPath $Source)) {
+  Write-Warn "没有找到 $Source"
   exit 1
 }
 
+$sourceEmpty = (Get-Item -LiteralPath $Source).Length -eq 0
+$same = Test-SameContent -SourcePath $Source -TargetPath $Target
+
 # ---------------------------------------------------------------- 只看状态
 if ($List) {
-  Write-Step "源目录  : $CommonDir"
-  Write-Step "目标目录: $Destination"
-  foreach ($file in $files) {
-    $target = Join-Path $Destination $file.Name
-    if (Test-SameContent -Source $file.FullName -Target $target) {
-      Write-Host "  [已一致] $($file.Name)"
-    } elseif (Test-Path -LiteralPath $target) {
-      Write-Host "  [待更新] $($file.Name)"
-    } else {
-      Write-Host "  [待复制] $($file.Name)"
-    }
+  Write-Step "源文件  : $Source"
+  Write-Step "目标文件: $Target"
+  if ($same) {
+    Write-Host "  [已一致] $ConfigName"
+  } elseif (Test-Path -LiteralPath $Target) {
+    Write-Host "  [待更新] $ConfigName"
+  } else {
+    Write-Host "  [待复制] $ConfigName"
+  }
+  if ($sourceEmpty) {
+    Write-Host '  [注意] 源文件是空的（0 字节），默认不会覆盖目标'
   }
   exit 0
 }
 
 # ---------------------------------------------------------------- 拷贝
-if (-not (Test-Path -LiteralPath $Destination)) {
-  Write-Step "创建目标目录 $Destination"
-  New-Item -ItemType Directory -Path $Destination -Force | Out-Null
+if ($sourceEmpty -and -not $Force) {
+  Write-Warn "源文件是空的：$Source"
+  Write-Warn "为免把 $Target 覆盖成空文件，本次跳过；确实要覆盖就加 -Force"
+  exit 1
 }
 
-$copied = 0
-$skipped = 0
-foreach ($file in $files) {
-  $target = Join-Path $Destination $file.Name
-  if (Test-SameContent -Source $file.FullName -Target $target) {
-    $skipped++
-    Write-Step "$($file.Name) 内容一致，跳过"
-    continue
-  }
-
-  Copy-Item -LiteralPath $file.FullName -Destination $target -Force
-  $copied++
-  Write-Step "$($file.Name) -> $target"
+if ($same) {
+  Write-Step "$ConfigName 内容一致，跳过"
+  exit 0
 }
 
-Write-Step "完成：拷贝 $copied 个，跳过 $skipped 个"
+$targetDir = Split-Path -Parent $Target
+if ($targetDir -and -not (Test-Path -LiteralPath $targetDir)) {
+  Write-Step "创建目标目录 $targetDir"
+  New-Item -ItemType Directory -Path $targetDir -Force | Out-Null
+}
+
+Copy-Item -LiteralPath $Source -Destination $Target -Force
+Write-Step "$ConfigName -> $Target"
 exit 0

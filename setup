@@ -48,7 +48,7 @@ setup_for_tmux_conf() {
   [[ ! -d $TMUX_DIR ]] && git clone --single-branch https://github.com/gpakosz/.tmux.git $TMUX_DIR
   mkdir -p ~/.config/tmux
   ln -s -f $TMUX_DIR/.tmux.conf ~/.config/tmux/tmux.conf
-  ln -s -f $COMMON_DIR/.tmux.conf.local ~/.config/tmux/tmux.conf.local
+  [[ -f $COMMON_DIR/.tmux.conf.local ]] && ln -s -f $COMMON_DIR/.tmux.conf.local ~/.config/tmux/tmux.conf.local
 }
 
 setup_for_tmux_bin() {
