@@ -38,7 +38,7 @@ Linux 侧的 `setup_for_tmux_conf` 则是克隆 oh-my-tmux 到 `external/` 并�
 | `pwsh_keys` | `windows/pwsh_keys.ps1` | 把 `Ctrl+U` / `Ctrl+K` 写进 `CurrentUserAllHosts` profile |
 | `fzf` | `windows/fzf-for-windows-terminal.ps1` | 装 PSFzf 模块，把 `Ctrl+F` / `Ctrl+R` / `Alt+C` 的配置块写进 `$PROFILE` |
 | `mkcd` | `windows/mkcd.ps1` | 用 uv 在 `D:\.mkcd` 建独立环境并装 mkcd（Linux 命令集），需要 uv |
-| `psmux` | `windows/psmux.ps1` | 把 `common\.psmux.conf` 拷到用户根目录（内容相同则跳过，源文件为空则拒绝） |
+| `psmux` | `windows/psmux.ps1` | 把 `common\.psmux.conf` 拷到用户根目录（相同则跳过、源文件为空则拒绝），并确保 ppm 插件就位 |
 
 `windows/helpers.ps1` 只放无副作用的公共函数（`Write-Step`、`Write-Warn`、`Test-Admin`、
 `Get-ChocoPath`、`Get-ChocoInstalledPackages`、`WriteOnceToFile` …），被其他脚本 dot-source。
@@ -66,7 +66,7 @@ windows/apps.ps1          # 应用清单 $Catalog + 选择/安装流程
 windows/pwsh_keys.ps1     # 命令行键位（写 CurrentUserAllHosts profile）
 windows/fzf-for-windows-terminal.ps1  # PSFzf 快捷键（写 $PROFILE 配置块）
 windows/mkcd.ps1          # 用 uv 装 mkcd（Linux 命令集）
-windows/psmux.ps1         # 把 common/.psmux.conf 拷到用户目录
+windows/psmux.ps1         # 拷 common/.psmux.conf 到用户目录，并装 ppm 插件
 windows/helpers.ps1       # 公共函数
 .agents/skills/…          # 本仓库的 agent skill（Windows 脚本细则）
 ```

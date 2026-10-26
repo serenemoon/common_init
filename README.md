@@ -205,14 +205,19 @@ powershell -File .\windows\mkcd.ps1 -EnvDir E:\.mkcd -Python 3.13
 `tee` 等）。所以装完要**新开一个终端**。想撒销：先跑 `D:\.mkcd\.venv\Scripts\mkcd-uninstall.exe`，
 再删掉整个 `D:\.mkcd` 目录即可。
 
-### psmux 配置
+### psmux 配置与 ppm 插件
 
-`windows\psmux.ps1` 把 `common\.psmux.conf` 拷到用户根目录，配合应用清单里的 `psmux`
-（Windows 版 tmux）使用：
+`windows\psmux.ps1` 把 `common\.psmux.conf` 拷到用户根目录，并确保 ppm 插件就位，
+配合应用清单里的 `psmux`（Windows 版 tmux）使用：
 
 ```
 common\.psmux.conf  ->  %USERPROFILE%\.psmux.conf
+（clone 后拷过去）    ->  %USERPROFILE%\.psmux\plugins\ppm
 ```
+
+ppm 只在 `~\.psmux\plugins\ppm` 不存在时装：`git clone
+https://github.com/psmux/psmux-plugins.git` 到临时目录，把里面的 `ppm` 子目录拷进
+`.psmux\plugins`，再删掉临时目录（需要 `git`）。
 
 内容相同时跳过，所以重复执行没有副作用。**源文件是空的时候会拒绝覆盖**（免得把已有的
 `~\.psmux.conf` 清空），确实想覆盖加 `-Force`。

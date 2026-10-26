@@ -15,7 +15,7 @@ description: Use when adding, editing, or debugging the Windows setup scripts in
 - `windows/apps.ps1`：唯一的应用清单 `$Catalog` + 选择/安装流程（`Show-PackageCatalog`、`Read-PackageSelection`、`Resolve-PackageTargets`、`Install-PackageCatalog`）。
 - `windows/pwsh_keys.ps1`：把 `Ctrl+U` / `Ctrl+K` 两行 `Set-PSReadLineKeyHandler` 写进 `CurrentUserAllHosts` profile，靠 `WriteOnceToFile` 保证只写一次；支持 `-List` / `-Remove` / `-ProfilePath`。
 - `windows/mkcd.ps1`：用 uv 在 `D:\.mkcd` 建自包含环境（`python install --install-dir` + `venv` + `pip install mkcd`），最后 `uv run python -c 'import mkcd; mkcd.install()'` 注册命令；支持 `-List` / `-Force` / `-EnvDir` / `-Python`。联网的 uv 命令（`python install` / `pip install` / `run`）都带 `--system-certs`——uv 默认只信内置的 Mozilla 根证书，公司网络的 TLS 解密代理（Zscaler 等）下会报 `UnknownIssuer`；注意 `uv run` 里这个开关必须放在 `python` 之前，否则会被当成传给 python 的参数。
-- `windows/psmux.ps1`：把 `common\.psmux.conf` 拷到用户根目录（默认 `$HOME`），用 SHA256 比较内容，相同就跳过；源文件为 0 字节时拒绝覆盖（`-Force` 强制）；支持 `-List` / `-Destination`。
+- `windows/psmux.ps1`：把 `common\.psmux.conf` 拷到用户根目录（默认 `$HOME`），用 SHA256 比较内容，相同就跳过；源文件为 0 字节时拒绝覆盖（`-Force` 强制）；`<home>\.psmux\plugins\ppm` 不存在时 `git clone` psmux-plugins 到 `$env:TEMP\psmux-plugins`、拷出 `ppm` 子目录，再删掉临时目录；支持 `-List` / `-Destination`。
 - `windows/fzf-for-windows-terminal.ps1`：安装器——装 PSFzf 模块并把快捷键选项写进 `$PROFILE`。它**不再**靠被 dot-source 生效，所以 profile 里不应该留 dot-source 它的行。
 
 ## 铁律：`.ps1` 必须存成 UTF-8 with BOM
