@@ -59,6 +59,7 @@ description: Use when adding, editing, or debugging the Windows setup scripts in
 - 无参数运行时列出菜单：`[ 1]: apps.ps1  "安装应用"`，输入编号（可多个）= 只执行这几个；`y` / `yes` = 全部；`n` / `no` 或直接回车 = **都不执行**。
 - `apps.ps1` 的应用选择是**默认都不装**：直接回车 / `n` / `no` = 都不装，`y` / `yes` = 全部，编号 = 只装选中的（`-match` 本来就不区分大小写，不用额外处理 `Y`/`NO`）。
 - `-Steps <编号或名字>`：非交互指定步骤（如 `-Steps 2`、`-Steps pwsh_keys,fzf`），这是唯一的选择参数。
+- `-- <参数...>`：`--` 后面的参数原样透传给每个被执行的步骤脚本。**不要用数组 splat 转发**（`& $path @args` 会把 `-Name value` 当成位置参数）——要么重建命令行走 `Invoke-Expression`（现在就是 `Invoke-StepScript` 这个函数），要么把参数解成哈希表再 splat。`--` 由 PowerShell 解析器吃掉，`powershell -File ... --` 这种从 cmd 调用的情况会报“参数名称具有二义性”。
 - `-List`：只打印 choco 状态、步骤菜单和各脚本的 `-List`，**不允许有任何写操作**。
 - `-Help`：打印用法。
 - 提权（`Start-Process -Verb RunAs`）要在交互选择**之前**做，否则提权后会再问一遍；`Get-RelaunchArguments` 负责把 `-Steps` 原样传回去。

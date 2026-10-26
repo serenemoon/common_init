@@ -99,6 +99,12 @@ fd、fzf、nvm、nodejs、uv、unzip、universal-ctags、notepad++、obsidian、
 | `-Steps <编号或名字>` | 只执行指定步骤，多个用逗号分隔，如 `-Steps 2`、`-Steps pwsh_keys,fzf` |
 | `-List`               | 只列出步骤状态、应用清单和各脚本的配置状态，不做任何改动             |
 | `-Help`               | 显示帮助                                                             |
+| `-- <参数...>`        | `--` 后面的参数原样传给被执行的步骤脚本（选多个步骤时每个都会收到）  |
+
+比如 `-Steps psmux -- -Destination D:\x` 会把 `-Destination D:\x` 交给
+`windows\psmux.ps1`；不写 `--` 时，`setup.ps1` 不认识的参数也会透传。注意 `--` 是
+PowerShell 解析器处理的，用 `powershell -File setup.ps1 ... -- ...` 从 cmd 调用时不会被识别，
+那种情况改用 `powershell -Command '& .\setup.ps1 ... -- ...'`。
 
 `windows\apps.ps1` 也可以单独运行：不带参数时交互式选择（默认都不装，`y` = 全部安装）；
 `-Packages ripgrep,fzf` 只装指定应用；`-All` 全部安装；`-All -Force` 全部重装；

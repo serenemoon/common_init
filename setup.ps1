@@ -24,7 +24,10 @@ param(
   [string[]]$Steps = @(),
   # 只列出步骤状态和应用清单，不做任何改动
   [switch]$List,
-  [switch]$Help
+  [switch]$Help,
+  # `--` 之后的所有参数，原样透传给被执行的步骤脚本
+  [Parameter(ValueFromRemainingArguments = $true)]
+  [string[]]$StepArgs = @()
 )
 
 Set-StrictMode -Version Latest
@@ -71,6 +74,8 @@ function Show-Usage {
                        不给这个参数时交互选择（回车 = 都不执行，y = 全部）
   -List                只列出步骤状态和应用清单，不做任何改动
   -Help                显示本帮助
+  -- <参数...>         `--` 后面的参数原样传给被执行的步骤脚本（选多个步骤时都会收到）
+                         例: .\setup.ps1 -Steps psmux -- -Destination D:\x
 '@
 }
 
@@ -181,7 +186,43 @@ function Get-RelaunchArguments {
   return $relaunchArgs + $ExtraArgs
 }
 
+# 把透传参数拼回命令行再执行。
+# 数组 splat（@args）会把 "-Name value" 当成位置参数，只有重新过一遍解析器，
+# 语义才和用户直接敲命令一致（开关 / -Name value / 带空格的值）。
+function Invoke-StepScript {
+  param(
+    [string]$Path,
+    [string[]]$Arguments = @()
+  )
+
+  if ($Arguments.Count -eq 0) {
+    & $Path
+    return
+  }
+
+  $command = "& '" + ($Path -replace "'", "''") + "'"
+  foreach ($argument in $Arguments) {
+    if ($argument -match '[\s''"]') {
+      $command += " '" + ($argument -replace "'", "''") + "'"
+    } else {
+      $command += ' ' + $argument
+    }
+  }
+  Invoke-Expression $command
+}
+
 if ($Help) { Show-Usage; exit 0 }
+
+# `--` 后面的参数透传给步骤脚本。PowerShell 一般会把 `--` 自己吃掉，
+# 这里再兜一下：万一它作为参数传进来，就跳过。
+$PassThru = @()
+if ($StepArgs.Count -gt 0) {
+  $start = 0
+  if ($StepArgs[0] -eq '--') { $start = 1 }
+  if ($StepArgs.Count -gt $start) {
+    $PassThru = @($StepArgs[$start..($StepArgs.Count - 1)])
+  }
+}
 
 $chocoPath = Get-ChocoPath
 
@@ -210,7 +251,15 @@ if (-not (Test-Admin)) {
   Write-Step '需要管理员权限，正在以管理员身份重新运行本脚本'
   $currentHost = (Get-Process -Id $PID).Path
   if (-not $currentHost) { $currentHost = 'powershell.exe' }
-  $relaunchArgs = Get-RelaunchArguments -BoundParameters $PSBoundParameters -ExtraArgs $args
+  # 透传参数单独拼，别经过 Get-RelaunchArguments 的逗号拼接
+  $boundParameters = @{}
+  foreach ($key in $PSBoundParameters.Keys) {
+    if ($key -eq 'StepArgs') { continue }
+    $boundParameters[$key] = $PSBoundParameters[$key]
+  }
+  $extraArgs = @()
+  if ($PassThru.Count -gt 0) { $extraArgs = @('--') + $PassThru }
+  $relaunchArgs = Get-RelaunchArguments -BoundParameters $boundParameters -ExtraArgs $extraArgs
   Start-Process -FilePath $currentHost -Verb RunAs -ArgumentList $relaunchArgs
   exit 0
 }
@@ -236,6 +285,10 @@ if ($selected.Count -eq 0) {
 }
 
 # -- 按顺序执行选中的步骤 ----------------------------------------------------
+if ($PassThru.Count -gt 0) {
+  Write-Step "透传参数: $($PassThru -join ' ')"
+}
+
 foreach ($step in $StepTable) {
   if (-not ($selected | Where-Object { $_.Name -eq $step.Name })) {
     Write-Step "跳过 $($step.Name)"
@@ -244,7 +297,7 @@ foreach ($step in $StepTable) {
 
   $path = Join-Path $PSScriptRoot $step.Script
   Write-Step "执行 $($step.Name)（$(Split-Path -Leaf $path)）"
-  & $path
+  Invoke-StepScript -Path $path -Arguments $PassThru
   if ($LASTEXITCODE -ne 0) {
     Write-Warn "$($step.Name) 执行失败，详见上方日志"
   }
